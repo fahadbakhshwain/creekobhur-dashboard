@@ -10,7 +10,11 @@ SCHEDULE_FILE = "weekly_schedule.txt" # لجدول العمل الأسبوعي
 # دالة لتحميل المهام من ملف CSV
 def load_tasks():
     if os.path.exists(TASKS_FILE):
-        return pd.read_csv(TASKS_FILE)
+        try:
+            return pd.read_csv(TASKS_FILE)
+        except pd.errors.EmptyDataError:
+            # إذا كان الملف موجوداً لكنه فارغاً
+            return pd.DataFrame(columns=["التاريخ", "المشرف", "المهمة", "ملاحظات"])
     return pd.DataFrame(columns=["التاريخ", "المشرف", "المهمة", "ملاحظات"])
 
 # دالة لحفظ المهام في ملف CSV
@@ -37,10 +41,13 @@ def run():
     st.header("إدارة المهام والجدول (للمديرة)")
     with st.expander("إضافة مهمة جديدة"):
         with st.form("new_task_form", clear_on_submit=True):
-            task_date = st.date_input("تاريخ المهمة:", datetime.date.today())
+            # استخدام تاريخ اليوم الحالي في جدة
+            current_date_jeddah = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date() # توقيت السعودية هو UTC+3
+            task_date = st.date_input("تاريخ المهمة:", current_date_jeddah)
+            
             supervisor = st.selectbox(
                 "المشرف المسؤول:",
-                ["المشرف الأول", "المشرف الثاني", "المشرف الثالث", "العمالة العامة", "فريق الصيانة"], # يمكنك تعديل هذه الأسماء لتشمل المشرفين الفعليين
+                ["المشرف الأول", "المشرف الثاني", "المشرف الثالث", "العمالة العامة", "فريق الصيانة", "المديرة"], # أضفت "المديرة" كخيار
                 key="task_supervisor"
             )
             task_description = st.text_area("المهمة المطلوبة:", key="task_desc", height=100)
@@ -59,15 +66,16 @@ def run():
                         "ملاحظات": notes
                     }])
                     all_tasks = load_tasks()
-                    # إضافة تحقق لتجنب تكرار الصفوف إذا كان الملف فارغاً في البداية
-                    if all_tasks.empty and os.path.exists(TASKS_FILE):
+                    
+                    # التحقق من أن all_tasks ليس فارغاً لتجنب مشاكل concat إذا كان الملف فارغاً تماماً
+                    if all_tasks.empty:
                         updated_tasks = new_task
                     else:
                         updated_tasks = pd.concat([all_tasks, new_task], ignore_index=True)
                     
                     save_tasks(updated_tasks)
                     st.success("✅ تم إضافة المهمة بنجاح!")
-                    st.experimental_rerun() # لإعادة تحميل الصفحة وعرض المهمة المضافة
+                    st.rerun() # <--- تم التغيير هنا (استخدام st.rerun())
 
     with st.expander("تحديث الجدول الأسبوعي"):
         current_schedule = load_weekly_schedule()
@@ -75,22 +83,25 @@ def run():
         if st.button("حفظ الجدول الأسبوعي"):
             save_weekly_schedule(new_schedule_text)
             st.success("✅ تم حفظ الجدول الأسبوعي بنجاح!")
-            st.experimental_rerun() # لإعادة تحميل الصفحة
+            st.rerun() # <--- تم التغيير هنا (استخدام st.rerun())
 
     # قسم عرض المهام (للمشرفين)
     st.header("عرض المهام اليومية والجدول الأسبوعي")
 
     st.subheader("🗓️ المهام المطلوبة لليوم:")
     all_tasks = load_tasks()
-    today_date_str = datetime.date.today().isoformat()
+    
+    # استخدام تاريخ اليوم الحالي في جدة للمقارنة
+    current_date_jeddah = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date()
+    today_date_str = current_date_jeddah.isoformat()
+
     daily_tasks = all_tasks[all_tasks["التاريخ"] == today_date_str]
 
     if not daily_tasks.empty:
         # عرض المهام في جدول جميل
         st.dataframe(daily_tasks[['المشرف', 'المهمة', 'ملاحظات']].style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
-        # خيار تصفية المهام حسب المشرف
-        st.markdown("---")
-        st.write("---") # فاصل مرئي
+        
+        st.markdown("---") # فاصل مرئي
         st.subheader("🔍 تصفية المهام حسب المشرف:")
         unique_supervisors = ["الكل"] + daily_tasks["المشرف"].unique().tolist()
         selected_supervisor_filter = st.selectbox("اختر المشرف:", unique_supervisors)
