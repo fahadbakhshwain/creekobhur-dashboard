@@ -18,15 +18,15 @@ with col1:
     if st.button("📋 المهام اليومية", use_container_width=True):
         st.switch_page("pages/المهام_اليومية.py")
 
-    if st.button("📦 دورات المياه", use_container_width=True):
+    if st.button("🚽 دورات المياه", use_container_width=True):
         st.switch_page("pages/دورات_المياه.py")
 
     if st.button("🌴 الشواطئ", use_container_width=True):
         st.switch_page("pages/الشواطئ.py")
 
 with col2:
-    if st.button("🧑‍🤝‍🧑 الموظفين الحاليين", use_container_width=True):
-        st.switch_page("pages/الموظفين_الحاليين.py")
+    if st.button("🧑‍🤝‍🧑 الموظفون الحاليون", use_container_width=True):
+        st.switch_page("pages/الموظفون_الحاليون.py")
 
     if st.button("🏢 الإدارة", use_container_width=True):
         st.switch_page("pages/الإدارة.py")
