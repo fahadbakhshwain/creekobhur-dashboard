@@ -25,11 +25,16 @@ with col1:
         st.switch_page("pages/الشواطئ.py")
 
 with col2:
-    if st.button("🧑‍🤝‍🧑 الموظفون الحاليون", use_container_width=True):
-        st.switch_page("pages/الموظفون_الحاليون.py")
+    # تم التعديل هنا: "الموظفون الحاليون" إلى "الموظفين"
+    if st.button("🧑‍🤝‍🧑 الموظفين", use_container_width=True):
+        st.switch_page("pages/الموظفين.py") # هذا هو المسار الصحيح الآن
 
     if st.button("🏢 الإدارة", use_container_width=True):
         st.switch_page("pages/الإدارة.py")
+
+    # إضافة زر الطوارئ (إذا كنت تريد إضافته)
+    if st.button("🚨 الطوارئ", use_container_width=True):
+        st.switch_page("pages/الطوارئ.py") # تأكد أن لديك ملف pages/الطوارئ.py
 
 # ملاحظة
 st.markdown("---")
