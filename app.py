@@ -1,23 +1,34 @@
 import streamlit as st
-import toilets
-import beaches
-import view
-import staff  # أضف هذا
+import os
 
-st.set_page_config(page_title="Creek Obhur", layout="wide")
+# إعداد الصفحة
+st.set_page_config(
+    page_title="Creek Obhur - نظام إدارة الواجهة البحرية",
+    page_icon="🏖️",
+    layout="wide"
+)
 
-st.title("🏖️ نظام إدارة الواجهة البحرية - Creek Obhur")
-st.markdown("👇 اختر القسم الذي تريد الدخول إليه:")
+# عنوان رئيسي
+st.markdown("## 🏖️ نظام إدارة الواجهة البحرية - Creek Obhur")
 
-section = st.selectbox("📋 الأقسام:", ["الرئيسية", "دورات المياه", "الشواطئ", "المهام اليومية", "الموظفين الحاليين"])
+# اختيار القسم من خلال مربعات
+st.markdown("### 👇 اختر القسم الذي تريد الدخول إليه:")
 
-if section == "دورات المياه":
-    toilets.run()
-elif section == "الشواطئ":
-    beaches.run()
-elif section == "المهام اليومية":
-    view.run()
-elif section == "الموظفين الحاليين":
-    staff.run()
-else:
-    st.subheader("👈 الرجاء اختيار قسم من القائمة.")
+# تقسيم الأزرار على صفين (باستخدام الأعمدة)
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("📋 المهام اليومية", use_container_width=True):
+        st.switch_page("pages/المهام_اليومية.py")
+
+    if st.button("📦 دورات المياه", use_container_width=True):
+        st.switch_page("pages/دورات_المياه.py")
+
+    if st.button("🌴 الشواطئ", use_container_width=True):
+        st.switch_page("pages/الشواطئ.py")
+
+with col2:
+    if st.button("🧑‍🤝‍🧑 الموظفين الحاليين", use_container_width=True):
+        st.switch_page("pages/الموظفين_الحاليين.py")
+
+    if st.butt
