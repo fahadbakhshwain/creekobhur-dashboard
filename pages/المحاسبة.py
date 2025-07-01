@@ -155,7 +155,21 @@ def run():
 
             if st.button("حفظ تحديثات التحقق", key="save_verification_updates"):
                 all_financial_data_for_save = load_financial_data()
-                updated_all_data = pd.concat([all_financial_data_for
+                # تم تصحيح هذا السطر: كان غير مكتمل
+                updated_all_data = pd.concat([all_financial_data_for_save[all_financial_data_for_save["التاريخ"] != today_date_str], edited_df], ignore_index=True)
+                save_financial_data(updated_all_data)
+                st.success("✅ تم حفظ تحديثات التحقق بنجاح!")
+                st.rerun()
+
+        else:
+            st.info("لا توجد بنود مالية اليوم يمكن التحقق منها.")
+
+    else:
+        st.info("لا توجد بنود مالية مسجلة لهذا اليوم حتى الآن.")
+
+# استدعاء الدالة لتشغيل الصفحة
+run()
    
+      
         
              
