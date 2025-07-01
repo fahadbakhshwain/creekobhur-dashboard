@@ -36,9 +36,6 @@ def save_weekly_schedule(schedule_text):
 
 # دالة لتحميل جدول دوام الموظفين اليومي
 def load_daily_staff_schedule():
-    # جدول الدوام يتعلق بتاريخ محدد. سنقوم بتخزينه بأسماء ملفات مختلفة لكل يوم
-    # أو نضمن التاريخ في الكود نفسه.
-    # للحفاظ على البساطة في البروتوتايب، سنستخدم ملفاً واحداً يتحدث يومياً.
     if os.path.exists(DAILY_STAFF_SCHEDULE_FILE):
         with open(DAILY_STAFF_SCHEDULE_FILE, "r", encoding="utf-8") as f:
             return f.read()
@@ -55,10 +52,12 @@ def markdown_table_to_dataframe(markdown_text):
     if len(lines) < 2: 
         return pd.DataFrame() 
 
+    # رؤوس الأعمدة
     header_line = lines[0].strip('|')
     header_parts = header_line.split('|')
     header = [h.strip() for h in header_parts]
     
+    # التحقق من وجود خط الفاصل (مثل ---|---|---)
     if len(lines) > 1 and all(c in ['-', '|', ' ', ':'] for c in lines[1].strip()):
         data_lines = lines[2:]
     else:
@@ -72,7 +71,7 @@ def markdown_table_to_dataframe(markdown_text):
                 data.append(row)
             else:
                 # يمكنك إظهار تحذير للمديرة إذا كان الصف غير متطابق
-                pass # st.warning(f"تم تجاهل صف غير متطابق في الجدول: {line}")
+                pass 
 
     return pd.DataFrame(data, columns=header) if data else pd.DataFrame(columns=header)
 
@@ -82,7 +81,7 @@ def run():
     st.info("هنا يتم تسجيل وتتبع المهام اليومية والجدول الأسبوعي وجدول دوام الموظفين.")
 
     # قائمة المشرفين الكاملة التي يمكن استخدامها في جميع الـ selectbox
-    all_possible_supervisors = ["المشرف الأول", "المشرف الثاني", "المشرف الثالث", "العمالة العامة", "فريق الصيانة", "المديرة", "أمن"] # أضفت "أمن"
+    all_possible_supervisors = ["المشرف الأول", "المشرف الثاني", "المشرف الثالث", "العمالة العامة", "فريق الصيانة", "المديرة", "أمن"] 
 
     # قسم المديرة: لإدخال المهام والجداول
     st.header("إدارة المهام والجداول (للمديرة)")
@@ -144,12 +143,14 @@ def run():
     # نموذج تحديث جدول دوام الموظفين اليومي
     with st.expander("👥 تحديث جدول دوام الموظفين اليومي"):
         st.markdown("**يرجى إدخال جدول الدوام اليومي بتنسيق Markdown للجدول (مثال بالأسفل):**")
+        # مثال لجدول الدوام كما في الصورة التي أرسلتها
         st.code("""
-| الاسم | الوقت       | الوظيفة | الأحد | الاثنين | الثلاثاء | الأربعاء | الخميس | الجمعة | السبت |
-|---|------------|--------|---|---|---|---|---|---|---|
-| فهد  | 7AM-4PM    | مشرف   | ON  | OFF    | ON     | ON     | ON    | ON   | ON   |
-| منى  | 6AM-3PM    | كاشير  | ON  | ON     | ON     | OFF    | ON    | ON   | ON   |
-| جياد | 3PM-11PM   | حارس أمن | ON  | ON     | ON     | ON     | ON    | ON   | ON   |
+| الاسم | الوقت | الوظيفة | الجمعة | السبت | الأحد | الاثنين | الثلاثاء | الأربعاء | الخميس |
+|---|---|---|---|---|---|---|---|---|
+| فهد | 7AM-4PM | مشرف عام | ON | ON | ON | ON | ON | ON | ON |
+| بادي | 8AM-5PM | مشرف | ON | ON | ON | ON | ON | ON | ON |
+| أحمد | 11AM-8PM | مشرف | OFF | OFF | OFF | OFF | OFF | OFF | ON |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
 """, language='markdown') 
 
         current_daily_staff_schedule_text = load_daily_staff_schedule()
@@ -172,11 +173,9 @@ def run():
 
     daily_tasks = all_tasks[all_tasks["التاريخ"] == today_date_str]
 
-    # قائمة المشرفين الشاملة للتصفية (بما في ذلك "الكل")
     filter_supervisor_options = ["الكل"] + all_possible_supervisors 
 
-    # تحديد القيمة الافتراضية لـ selectbox التصفية
-    default_filter_index = 0 # "الكل" افتراضياً
+    default_filter_index = 0 
     if "المشرف الأول" in filter_supervisor_options:
         default_filter_index = filter_supervisor_options.index("المشرف الأول")
 
@@ -200,7 +199,7 @@ def run():
         st.info("لا توجد مهام محددة لهذا اليوم حتى الآن. يرجى من المديرة إضافتها.")
 
     # عرض الجدول الأسبوعي
-    st.subheader("جدول العمل الأسبوعي الحالي:")
+    st.subheader("📅 جدول العمل الأسبوعي الحالي:")
     weekly_schedule_text = load_weekly_schedule()
     weekly_schedule_df = markdown_table_to_dataframe(weekly_schedule_text)
     
@@ -212,18 +211,25 @@ def run():
             st.warning("الجدول الأسبوعي المدخل ليس بتنسيق جدول Markdown صالح لعرضه كجدول بيانات. يرجى مراجعة التنسيق.")
 
     # عرض جدول دوام الموظفين اليومي
-    st.subheader("👥 جدول دوام الموظفين اليومي:")
-    daily_staff_schedule_text = load_daily_staff_schedule()
-    daily_staff_schedule_df = markdown_table_to_dataframe(daily_staff_schedule_text)
-    
-    if not daily_staff_schedule_df.empty:
-        st.dataframe(daily_staff_schedule_df.style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
-    else:
-        st.markdown(daily_staff_schedule_text)
-        if daily_staff_schedule_text.strip() != "لا يوجد جدول دوام يومي حالياً. يرجى من المديرة إدخال الجدول.":
-            st.warning("جدول الدوام اليومي المدخل ليس بتنسيق جدول Markdown صالح لعرضه كجدول بيانات. يرجى مراجعة التنسيق.")
+    with st.expander("👥 عرض جدول دوام الموظفين اليومي (اضغط للتوسيع)"): # هنا استخدمنا expander لجعل الجدول قابلاً للتوسيع
+        daily_staff_schedule_text = load_daily_staff_schedule()
+        daily_staff_schedule_df = markdown_table_to_dataframe(daily_staff_schedule_text)
+        
+        if not daily_staff_schedule_df.empty:
+            # لجعل الجدول قابلاً للتوسع/التمرير إذا كان كبيراً
+            st.dataframe(daily_staff_schedule_df.style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
+        else:
+            st.markdown(daily_staff_schedule_text)
+            if daily_staff_schedule_text.strip() != "لا يوجد جدول دوام يومي حالياً. يرجى من المديرة إدخال الجدول.":
+                st.warning("جدول الدوام اليومي المدخل ليس بتنسيق جدول Markdown صالح لعرضه كجدول بيانات. يرجى مراجعة التنسيق.")
 
 
 # استدعاء الدالة لتشغيل الصفحة
 run()
+                    
+        
+
     
+
+    
+        
