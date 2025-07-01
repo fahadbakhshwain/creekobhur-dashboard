@@ -1,39 +1,39 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 st.set_page_config(page_title="نظام إدارة الواجهة البحرية", layout="wide")
 
-st.title("📋 نظام إدارة الواجهة البحرية – Creek Obhur")
+st.title("🏖️ نظام إدارة الواجهة البحرية - Creek Obhur")
+st.markdown("### 👇 اختر القسم الذي تريد الدخول إليه:")
 
-st.markdown("يرجى لصق رسالة المهام اليومية أدناه 👇")
+# تحديد القسم المختار
+section = st.selectbox(
+    "🔲 الأقسام:",
+    ["🏠 الرئيسية", "🧼 دورات المياه", "📋 المهام اليومية", "🏖️ الشواطئ", "👥 الموظفين الحاليين"]
+)
 
-# إدخال الرسالة
-message = st.text_area("📩 لصق الرسالة هنا:", height=300)
+# 🏠 الرئيسية - مربعات تنقل
+if section == "🏠 الرئيسية":
+    st.markdown("## 📦 الأقسام")
+    col1, col2 = st.columns(2)
 
-if st.button("🔍 تحليل الرسالة"):
-    lines = message.strip().split("\n")
-    tasks = []
+    with col1:
+        if st.button("🧼 دورات المياه", use_container_width=True):
+            section = "🧼 دورات المياه"
+    with col2:
+        if st.button("📋 المهام اليومية", use_container_width=True):
+            section = "📋 المهام اليومية"
 
-    for line in lines:
-        line = line.strip()
-        if line and not line.startswith("السلام") and not line.startswith("الله يعطيكم"):
-            tasks.append([line])
+    col3, col4 = st.columns(2)
+    with col3:
+        if st.button("🏖️ الشواطئ", use_container_width=True):
+            section = "🏖️ الشواطئ"
+    with col4:
+        if st.button("👥 الموظفين الحاليين", use_container_width=True):
+            section = "👥 الموظفين الحاليين"
 
-    # تجميع كشوفات الدوام
-    cleaned_tasks = []
-    skip_next = False
-    for i, task in enumerate(tasks):
-        t = task[0]
-        if "كشوفات الدوام" in t:
-            cleaned_tasks.append(["طباعة كشوفات دوام المنقذين + العمالة + الكاشيرات ووضعها في الأكشاك"])
-            skip_next = True
-        elif skip_next and ("المنقذين" in t or "العمالة" in t or "الكاشيرات" in t or "تنطبع" in t):
-            continue
-        else:
-            cleaned_tasks.append([t])
-            skip_next = False
+# 🧼 دورات المياه
+if section == "🧼 دورات المياه":
+    st.h
 
-    # عرض النتائج
-    df = pd.DataFrame(cleaned_tasks, columns=["المهمة"])
-    df.index = [f"مهمة {i+1}" for i in range(len(df))]
-    st.dataframe(df, use_container_width=True)
