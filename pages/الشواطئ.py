@@ -5,23 +5,31 @@ import os
 
 # اسم الملف لحفظ بيانات الشواطئ
 BEACHES_DATA_FILE = "beaches_status_data.csv"
+# مجلد لحفظ صور الشواطئ
+BEACHES_IMAGES_DIR = "beach_images"
+
+# التأكد من وجود مجلد حفظ الصور
+if not os.path.exists(BEACHES_IMAGES_DIR):
+    os.makedirs(BEACHES_IMAGES_DIR)
 
 # دالة لتحميل بيانات الشواطئ
 def load_beaches_data():
+    # تعريف الأعمدة المتوقعة هنا لتكون متاحة دائماً
+    expected_columns = [
+        "التاريخ", "اسم_المشرف", "اسم_الشاطئ", "حالة_الكاشير", 
+        "عدد_المنقذين_المتواجدين", "المفروض_تواجدهم_منقذين", "حالة_ابراج_المراقبة",
+        "حالة_الشاطئ_العامة", "موعد_الاخلاء", "موعد_فتح_السباحة", 
+        "الحالة_الجوية_والإغلاق", "حالة_الشبك", "حالة_اجهزة_النداء", 
+        "حالة_ادوات_السلامة", "حالة_الاسعافات_الاولية", "ملاحظات_عامة", "مسار_الصورة" # تم إضافة مسار_الصورة
+    ]
     if os.path.exists(BEACHES_DATA_FILE):
         try:
-            expected_columns = [
-                "التاريخ", "اسم_المشرف", "اسم_الشاطئ", "حالة_الكاشير", 
-                "عدد_المنقذين_المتواجدين", "المفروض_تواجدهم_منقذين", "حالة_ابراج_المراقبة",
-                "حالة_الشاطئ_العامة", "موعد_الاخلاء", "موعد_فتح_السباحة", 
-                "الحالة_الجوية_والإغلاق", "حالة_الشبك", "حالة_اجهزة_النداء", 
-                "حالة_ادوات_السلامة", "حالة_الاسعافات_الاولية", "ملاحظات_عامة"
-            ]
             df = pd.read_csv(BEACHES_DATA_FILE)
+            # التأكد من وجود جميع الأعمدة، وإضافة الناقصة بقيم فارغة
             for col in expected_columns:
                 if col not in df.columns:
-                    df[col] = ""
-            return df[expected_columns]
+                    df[col] = "" 
+            return df[expected_columns] # إعادة ترتيب الأعمدة حسب الترتيب المتوقع
         except pd.errors.EmptyDataError:
             return pd.DataFrame(columns=expected_columns)
     return pd.DataFrame(columns=expected_columns)
@@ -67,7 +75,6 @@ def run():
                 ["صافي وجيد للسباحة", "رياح قوية (تحذير)", "أمطار خفيفة", "أمطار غزيرة (إغلاق)", "عواصف (إغلاق)"], 
                 key="weather_condition_select"
             )
-            # زر راديو لتحديد ما إذا كان الشاطئ مغلقاً بسبب الجو
             is_beach_closed = st.radio("هل الشاطئ مغلق بسبب الظروف الجوية؟", ("نعم", "لا"), key="beach_closed_radio")
             if is_beach_closed == "نعم":
                 st.warning("تم إغلاق الشاطئ بسبب الظروف الجوية.")
@@ -78,11 +85,26 @@ def run():
 
         general_notes = st.text_area("ملاحظات إضافية حول الشاطئ اليوم:", height=100, key="beach_notes_text")
 
+        # حقل رفع الصورة
+        uploaded_image = st.file_uploader("ارفع صورة لحالة الشاطئ (اختياري):", type=["png", "jpg", "jpeg"], key="beach_image_uploader")
+
         submitted = st.form_submit_button("تسجيل حالة الشاطئ")
         if submitted:
             if not responsible_supervisor.strip():
                 st.error("الرجاء اختيار المشرف المسؤول.")
             else:
+                image_path = ""
+                if uploaded_image is not None:
+                    # إنشاء اسم فريد للصورة لحفظها
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    image_name = f"{selected_beach.replace(' ', '_')}_{timestamp}_{uploaded_image.name}"
+                    image_path = os.path.join(BEACHES_IMAGES_DIR, image_name)
+                    
+                    # حفظ الصورة
+                    with open(image_path, "wb") as f:
+                        f.write(uploaded_image.getbuffer())
+                    st.success(f"تم حفظ الصورة: {image_name}")
+
                 new_entry = pd.DataFrame([{
                     "التاريخ": entry_date.isoformat(),
                     "اسم_المشرف": responsible_supervisor,
@@ -99,7 +121,8 @@ def run():
                     "حالة_اجهزة_النداء": loudspeaker_status,
                     "حالة_ادوات_السلامة": safety_tools_status,
                     "حالة_الاسعافات_الاولية": first_aid_status,
-                    "ملاحظات_عامة": general_notes
+                    "ملاحظات_عامة": general_notes,
+                    "مسار_الصورة": image_path # حفظ مسار الصورة
                 }])
                 
                 all_data = load_beaches_data()
@@ -144,6 +167,14 @@ def run():
                     
                 st.write(f"**الحالة الجوية:** {beach_data['الحالة_الجوية_والإغلاق'].iloc[0]}")
                 st.write(f"**موعد الفتح:** {beach_data['موعد_فتح_السباحة'].iloc[0]} - **الإخلاء:** {beach_data['موعد_الاخلاء'].iloc[0]}")
+                
+                # عرض الصورة المرفوعة للشاطئ (إذا وجدت)
+                image_path = beach_data['مسار_الصورة'].iloc[0]
+                if image_path and os.path.exists(image_path):
+                    st.image(image_path, caption=f"صورة شاطئ {beach} ({beach_data['التاريخ'].iloc[0]})", width=300)
+                else:
+                    st.info("لا توجد صورة مرفوعة لهذا الشاطئ اليوم.")
+
                 if beach_data['ملاحظات_عامة'].iloc[0]:
                     st.info(f"**ملاحظات:** {beach_data['ملاحظات_عامة'].iloc[0]}")
                 st.markdown("---") # فاصل بين الشواطئ
@@ -158,3 +189,8 @@ def run():
 
 # استدعاء الدالة لتشغيل الصفحة
 run()
+    
+         
+              
+                    
+                
