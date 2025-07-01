@@ -7,7 +7,7 @@ import io
 # اسم الملف لحفظ المهام
 TASKS_FILE = "tasks.csv"
 SCHEDULE_FILE = "weekly_schedule.txt" # لجدول العمل الأسبوعي
-DAILY_STAFF_SCHEDULE_FILE = "daily_staff_schedule.txt" # لجدول دوام الموظفين اليومي
+DAILY_STAFF_SCHEDULE_CSV = "daily_staff_schedule.csv" # لحفظ جدول دوام الموظفين كـ CSV
 
 # دالة لتحميل المهام من ملف CSV
 def load_tasks():
@@ -34,30 +34,29 @@ def save_weekly_schedule(schedule_text):
     with open(SCHEDULE_FILE, "w", encoding="utf-8") as f:
         f.write(schedule_text)
 
-# دالة لتحميل جدول دوام الموظفين اليومي
-def load_daily_staff_schedule():
-    if os.path.exists(DAILY_STAFF_SCHEDULE_FILE):
-        with open(DAILY_STAFF_SCHEDULE_FILE, "r", encoding="utf-8") as f:
-            return f.read()
-    return "لا يوجد جدول دوام يومي حالياً. يرجى من المديرة إدخال الجدول."
+# دالة لتحميل جدول دوام الموظفين اليومي من CSV
+def load_daily_staff_schedule_df():
+    if os.path.exists(DAILY_STAFF_SCHEDULE_CSV):
+        try:
+            return pd.read_csv(DAILY_STAFF_SCHEDULE_CSV)
+        except pd.errors.EmptyDataError:
+            return pd.DataFrame() # إرجاع DataFrame فارغ إذا كان الملف موجوداً وفارغاً
+    return pd.DataFrame() # إرجاع DataFrame فارغ إذا كان الملف غير موجود
 
-# دالة لحفظ جدول دوام الموظفين اليومي
-def save_daily_staff_schedule(schedule_text):
-    with open(DAILY_STAFF_SCHEDULE_FILE, "w", encoding="utf-8") as f:
-        f.write(schedule_text)
+# دالة لحفظ جدول دوام الموظفين اليومي كـ CSV
+def save_daily_staff_schedule_df(df):
+    df.to_csv(DAILY_STAFF_SCHEDULE_CSV, index=False)
 
-# دالة لتحويل نص Markdown Table إلى DataFrame
+# دالة لتحويل نص Markdown Table إلى DataFrame (سنبقيها لدعم الجدول الأسبوعي)
 def markdown_table_to_dataframe(markdown_text):
     lines = markdown_text.strip().split('\n')
     if len(lines) < 2: 
         return pd.DataFrame() 
 
-    # رؤوس الأعمدة
     header_line = lines[0].strip('|')
     header_parts = header_line.split('|')
     header = [h.strip() for h in header_parts]
     
-    # التحقق من وجود خط الفاصل (مثل ---|---|---)
     if len(lines) > 1 and all(c in ['-', '|', ' ', ':'] for c in lines[1].strip()):
         data_lines = lines[2:]
     else:
@@ -70,7 +69,6 @@ def markdown_table_to_dataframe(markdown_text):
             if len(row) == len(header):
                 data.append(row)
             else:
-                # يمكنك إظهار تحذير للمديرة إذا كان الصف غير متطابق
                 pass 
 
     return pd.DataFrame(data, columns=header) if data else pd.DataFrame(columns=header)
@@ -80,13 +78,10 @@ def run():
     st.title("📋 المهام اليومية")
     st.info("هنا يتم تسجيل وتتبع المهام اليومية والجدول الأسبوعي وجدول دوام الموظفين.")
 
-    # قائمة المشرفين الكاملة التي يمكن استخدامها في جميع الـ selectbox
     all_possible_supervisors = ["المشرف الأول", "المشرف الثاني", "المشرف الثالث", "العمالة العامة", "فريق الصيانة", "المديرة", "أمن"] 
 
-    # قسم المديرة: لإدخال المهام والجداول
     st.header("إدارة المهام والجداول (للمديرة)")
 
-    # نموذج إضافة المهام اليومية
     with st.expander("➕ إضافة مهمة جديدة"):
         with st.form("new_task_form", clear_on_submit=True):
             current_date_jeddah = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date() 
@@ -122,7 +117,6 @@ def run():
                     st.success("✅ تم إضافة المهمة بنجاح!")
                     st.rerun()
 
-    # نموذج تحديث الجدول الأسبوعي
     with st.expander("📅 تحديث الجدول الأسبوعي"):
         st.markdown("**يرجى إدخال الجدول الأسبوعي بتنسيق Markdown للجدول (مثال بالأسفل):**")
         st.code("""
@@ -140,26 +134,33 @@ def run():
             st.success("✅ تم حفظ الجدول الأسبوعي بنجاح!")
             st.rerun()
 
-    # نموذج تحديث جدول دوام الموظفين اليومي
-    with st.expander("👥 تحديث جدول دوام الموظفين اليومي"):
-        st.markdown("**يرجى إدخال جدول الدوام اليومي بتنسيق Markdown للجدول (مثال بالأسفل):**")
-        # مثال لجدول الدوام كما في الصورة التي أرسلتها
-        st.code("""
-| الاسم | الوقت | الوظيفة | الجمعة | السبت | الأحد | الاثنين | الثلاثاء | الأربعاء | الخميس |
-|---|---|---|---|---|---|---|---|---|
-| فهد | 7AM-4PM | مشرف عام | ON | ON | ON | ON | ON | ON | ON |
-| بادي | 8AM-5PM | مشرف | ON | ON | ON | ON | ON | ON | ON |
-| أحمد | 11AM-8PM | مشرف | OFF | OFF | OFF | OFF | OFF | OFF | ON |
-| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
-""", language='markdown') 
-
-        current_daily_staff_schedule_text = load_daily_staff_schedule()
-        new_daily_staff_schedule_text = st.text_area("أدخل جدول الدوام اليومي هنا:", value=current_daily_staff_schedule_text, height=350, key="daily_staff_schedule_input")
+    # نموذج رفع وتحديث جدول دوام الموظفين اليومي
+    with st.expander("⬆️ رفع وتحديث جدول دوام الموظفين اليومي"):
+        st.markdown("**يرجى رفع ملف جدول الدوام (CSV أو Excel):**")
+        uploaded_file = st.file_uploader(
+            "اختر ملف CSV أو Excel", 
+            type=["csv", "xlsx"], 
+            key="daily_staff_schedule_uploader"
+        )
         
-        if st.button("حفظ جدول الدوام اليومي", key="save_daily_staff_schedule_btn"):
-            save_daily_staff_schedule(new_daily_staff_schedule_text)
-            st.success("✅ تم حفظ جدول الدوام اليومي بنجاح!")
-            st.rerun()
+        if uploaded_file is not None:
+            try:
+                # قراءة الملف حسب نوعه
+                if uploaded_file.name.endswith('.csv'):
+                    df_uploaded = pd.read_csv(uploaded_file)
+                elif uploaded_file.name.endswith('.xlsx'):
+                    df_uploaded = pd.read_excel(uploaded_file)
+                
+                st.write("تم تحميل الملف بنجاح. هذا هو محتوى الجدول:")
+                st.dataframe(df_uploaded, use_container_width=True) # عرض لمحة عن الجدول المرفوع
+                
+                if st.button("تأكيد وحفظ جدول الدوام", key="confirm_save_daily_schedule_btn"):
+                    save_daily_staff_schedule_df(df_uploaded)
+                    st.success("✅ تم حفظ جدول الدوام اليومي بنجاح!")
+                    st.rerun()
+            except Exception as e:
+                st.error(f"حدث خطأ أثناء قراءة الملف: {e}. يرجى التأكد من تنسيق الملف.")
+                st.warning("تأكد أن الملف لا يحتوي على خلايا مدمجة أو تنسيقات معقدة.")
 
 
     # قسم عرض المهام والجداول (للمشرفين)
@@ -211,24 +212,24 @@ def run():
             st.warning("الجدول الأسبوعي المدخل ليس بتنسيق جدول Markdown صالح لعرضه كجدول بيانات. يرجى مراجعة التنسيق.")
 
     # عرض جدول دوام الموظفين اليومي
-    with st.expander("👥 عرض جدول دوام الموظفين اليومي (اضغط للتوسيع)"): # هنا استخدمنا expander لجعل الجدول قابلاً للتوسيع
-        daily_staff_schedule_text = load_daily_staff_schedule()
-        daily_staff_schedule_df = markdown_table_to_dataframe(daily_staff_schedule_text)
-        
-        if not daily_staff_schedule_df.empty:
-            # لجعل الجدول قابلاً للتوسع/التمرير إذا كان كبيراً
-            st.dataframe(daily_staff_schedule_df.style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
-        else:
-            st.markdown(daily_staff_schedule_text)
-            if daily_staff_schedule_text.strip() != "لا يوجد جدول دوام يومي حالياً. يرجى من المديرة إدخال الجدول.":
-                st.warning("جدول الدوام اليومي المدخل ليس بتنسيق جدول Markdown صالح لعرضه كجدول بيانات. يرجى مراجعة التنسيق.")
+    st.subheader("👥 جدول دوام الموظفين اليومي:")
+    daily_staff_schedule_df = load_daily_staff_schedule_df() # نستخدم الدالة الجديدة هنا
+    
+    if not daily_staff_schedule_df.empty:
+        # هنا نستخدم expander للتوسع و use_container_width لجعل الجدول يملأ العرض
+        with st.expander("اضغط لعرض جدول الدوام كاملاً"):
+            st.dataframe(daily_staff_schedule_df.style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), use_container_width=True, hide_index=True)
+    else:
+        st.info("لا يوجد جدول دوام يومي لعرضه حالياً. يرجى رفعه من قسم الإدارة.")
 
 
 # استدعاء الدالة لتشغيل الصفحة
 run()
-                    
-        
+       
+      
 
+   
+   
     
 
     
