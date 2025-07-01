@@ -75,14 +75,10 @@ def run():
         st.subheader("توزيع عناصر الأمن على المناطق")
         st.markdown("**(يرجى إدخال عدد العناصر لكل منطقة وحالة التزامهم)**")
         
-        # إنشاء DataFrame مؤقت لتوزيع العناصر في المناطق
-        # هذا يسمح للمستخدم بإدخال البيانات بشكل جدول مباشر
         area_distribution_data = []
         for area in MONITORING_AREAS:
             area_distribution_data.append({"المنطقة": area, "عدد العناصر": 0, "ملتزمون بالموقع": "نعم"})
         
-        # استخدام st.data_editor للسماح بإدخال البيانات في جدول تفاعلي
-        # هذا يتطلب Streamlit v1.19.0 أو أحدث.
         edited_distribution_df = st.data_editor(
             pd.DataFrame(area_distribution_data),
             column_config={
@@ -107,7 +103,6 @@ def run():
             if not responsible_supervisor.strip():
                 st.error("الرجاء اختيار المشرف المسؤول.")
             else:
-                # جمع بيانات توزيع المناطق من edited_distribution_df
                 area_data_for_save = {}
                 for index, row in edited_distribution_df.iterrows():
                     area_name = row["المنطقة"]
@@ -121,7 +116,7 @@ def run():
                     "المفروض_تواجدهم_إجمالي": expected_elements_total,
                     "وصف_الحالة_المباشرة": incident_description,
                     "ملاحظات_عامة": general_notes,
-                    **area_data_for_save # دمج بيانات المناطق
+                    **area_data_for_save
                 }
                 new_entry = pd.DataFrame([new_entry_dict])
                 
@@ -142,39 +137,41 @@ def run():
 
     if not daily_records.empty:
         st.subheader("إجمالي تواجد العناصر:")
-        total_present = daily_records["عدد_العناصر_المتواجدين_إجمالي"].sum()
-        total_expected = daily_records["المفروض_تواجدهم_إجمالي"].sum()
-        st.metric(label="عناصر الأمن المتواجدون اليوم", value=f"{total_present} من {total_expected}")
-        if total_present < total_expected:
-            st.warning(f"⚠️ يوجد نقص في عدد عناصر الأمن اليوم: {total_expected - total_present} عنصر.")
-        elif total_present > total_expected:
-             st.info(f"✅ يوجد عدد عناصر زائد عن المطلوب: {total_present - total_present} عنصر.") # خطأ في السطر هذا كان total_present - total_expected
+        # استخدام آخر قيمة مسجلة لليوم للإجمالي
+        latest_total_present = daily_records["عدد_العناصر_المتواجدين_إجمالي"].iloc[-1]
+        latest_total_expected = daily_records["المفروض_تواجدهم_إجمالي"].iloc[-1]
+        
+        st.metric(label="عناصر الأمن المتواجدون اليوم", value=f"{latest_total_present} من {latest_total_expected}")
+        if latest_total_present < latest_total_expected:
+            st.warning(f"⚠️ يوجد نقص في عدد عناصر الأمن اليوم: {latest_total_expected - latest_total_present} عنصر.")
+        elif latest_total_present > latest_total_expected:
+             st.info(f"✅ يوجد عدد عناصر زائد عن المطلوب: {latest_total_present - latest_total_expected} عنصر.") # تم تصحيح هذا السطر
         else:
             st.success("✅ عدد عناصر الأمن مطابق للمطلوب اليوم.")
 
         st.subheader("تفاصيل توزيع العناصر في المناطق لليوم:")
-        # جمع بيانات توزيع المناطق لكل إدخال في اليوم الحالي
-        # قد يكون هناك عدة إدخالات لليوم (إذا قام المشرف بتحديث بيانات مناطق منفصلة)
-        # لذا، سنعرض آخر تحديث لكل منطقة أو نلخصها.
-        
-        # لغرض العرض في البروتوتايب، سنقوم بتلخيص البيانات الأخيرة لكل منطقة إذا كانت موجودة
-        # أو يمكن عرض سجلات متعددة حسب الحاجة
-        
-        # لتبسيط العرض، سنقوم بجمع بيانات توزيع المناطق من آخر إدخال لليوم (أو يمكن تلخيصها)
         if not daily_records.empty:
-            latest_record = daily_records.iloc[-1] # نأخذ آخر سجل لليوم
+            # هنا سنعرض جميع إدخالات توزيع المناطق التي تمت لليوم
+            # لتبسيط العرض ولأن كل submission يحفظ كل توزيعات المناطق، 
+            # سنعرض آخر توزيع تم إدخاله لليوم ليعكس الوضع الحالي
+            latest_record = daily_records.iloc[-1] 
             area_summary_list = []
             for area in MONITORING_AREAS:
-                num_elements = latest_record.get(f"عناصر_في_{area}", "غير مسجل")
+                num_elements = latest_record.get(f"عناصر_في_{area}", 0) # افتراضياً 0 إذا لم يتم تسجيلها
                 commitment = latest_record.get(f"التزام_في_{area}", "غير مسجل")
-                if num_elements != "غير مسجل" and commitment != "غير مسجل":
-                    area_summary_list.append({
-                        "المنطقة": area,
-                        "عدد العناصر": num_elements,
-                        "الالتزام": commitment
-                    })
-            if area_summary_list:
-                st.dataframe(pd.DataFrame(area_summary_list).style.set_properties(**{'text-align': 'right', 'font-size': '14px'}), hide_index=True, use_container_width=True)
+                area_summary_list.append({
+                    "المنطقة": area,
+                    "عدد العناصر": num_elements,
+                    "الالتزام": commitment
+                })
+            
+            # فلترة الصفوف التي بها عناصر فقط للعرض
+            summary_df = pd.DataFrame(area_summary_list)
+            # عرض فقط المناطق التي تم تحديد عدد عناصر لها (أو التي ليست 0)
+            displayed_summary_df = summary_df[summary_df["عدد العناصر"] > 0] 
+
+            if not displayed_summary_df.empty:
+                st.dataframe(displayed_summary_df.style.set_properties(**{'text-align': 'right', 'font-size': '14px'}), hide_index=True, use_container_width=True)
             else:
                 st.info("لم يتم تسجيل توزيع عناصر الأمن على المناطق لهذا اليوم.")
         else:
@@ -183,6 +180,7 @@ def run():
         st.subheader("الحالات التي تم مباشرتها اليوم:")
         incidents = daily_records[daily_records["وصف_الحالة_المباشرة"].str.strip() != ""]
         if not incidents.empty:
+            # عرض كل الحالات المبلغ عنها اليوم، حتى لو كانت في إدخالات منفصلة
             for index, row in incidents.iterrows():
                 st.markdown(f"**⏰ {row['التاريخ']} - المشرف: {row['المشرف_المسؤول']}**")
                 st.info(f"**وصف الحالة:** {row['وصف_الحالة_المباشرة']}")
@@ -198,9 +196,11 @@ def run():
         else:
             st.info("لا توجد ملاحظات عامة مسجلة اليوم.")
 
-
     else:
         st.info("لا توجد بيانات مسجلة للشركة الأمنية لهذا اليوم حتى الآن.")
 
 # استدعاء الدالة لتشغيل الصفحة
 run()
+  
+        
+         
