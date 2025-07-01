@@ -1,47 +1,14 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
 
-st.set_page_config(page_title="دورات المياه - Creek Obhur", layout="wide")
-st.title("🚽 إدارة دورات المياه - Creek Obhur")
+def run():
+    st.title("🚽 قسم دورات المياه")
 
-# اختيار رقم دورة المياه
-toilet_number = st.selectbox("🔢 رقم دورة المياه:", ["1", "2", "3"])
-gender = st.radio("🚻 النوع:", ["رجال", "نساء"])
+    toilet = st.selectbox("اختر دورة المياه:", ["1 - رجال", "1 - نساء", "2 - رجال", "2 - نساء", "3 - رجال", "3 - نساء"])
 
-# بيانات الحالة
-cleaned = st.radio("✅ هل تم تنظيفها اليوم؟", ["نعم", "لا"])
-missing_items = st.radio("🧼 هل يوجد أدوات ناقصة؟", ["نعم", "لا"])
-maintenance_needed = st.radio("🔧 هل تحتاج صيانة؟", ["نعم", "لا"])
-notes = st.text_area("📝 ملاحظات إضافية:")
+    st.text_input("آخر وقت تم التنظيف فيه", key=f"clean_time_{toilet}")
+    st.text_area("الملاحظات الخاصة بالنظافة", key=f"notes_clean_{toilet}")
+    st.text_input("المستلزمات الناقصة (صابون، مناديل، ...)", key=f"missing_items_{toilet}")
+    st.text_area("ملاحظات الصيانة المطلوبة", key=f"maintenance_notes_{toilet}")
 
-# زر الحفظ
-if st.button("💾 حفظ الحالة"):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    new_entry = {
-        "التاريخ": now,
-        "رقم الدورة": toilet_number,
-        "النوع": gender,
-        "تم التنظيف": cleaned,
-        "أدوات ناقصة": missing_items,
-        "تحتاج صيانة": maintenance_needed,
-        "ملاحظات": notes
-    }
-
-    try:
-        df = pd.read_csv("toilets_log.csv")
-    except FileNotFoundError:
-        df = pd.DataFrame()
-
-    df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
-    df.to_csv("toilets_log.csv", index=False)
-
-    st.success("✅ تم حفظ بيانات دورة المياه بنجاح!")
-
-# عرض السجل
-with st.expander("📋 عرض السجل الكامل"):
-    try:
-        log_df = pd.read_csv("toilets_log.csv")
-        st.dataframe(log_df, use_container_width=True)
-    except FileNotFoundError:
-        st.info("لا يوجد بيانات محفوظة بعد.")
+    if st.button("✅ حفظ البيانات"):
+        st.success("تم حفظ البيانات مؤقتًا (في الذاكرة فقط).")
