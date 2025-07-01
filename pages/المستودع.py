@@ -8,17 +8,19 @@ WAREHOUSE_DATA_FILE = "warehouse_inventory_data.csv"
 
 # دالة لتحميل بيانات المستودع
 def load_warehouse_data():
+    # تعريف الأعمدة المتوقعة هنا لتكون متاحة دائماً
+    expected_columns = [
+        "التاريخ", "وقت_التسجيل", "المسؤول", "نوع_العملية", 
+        "الصنف", "اسم_المادة", "الكمية", "الوحدة", "المورد", "ملاحظات" # تم إضافة اسم_المادة هنا
+    ]
     if os.path.exists(WAREHOUSE_DATA_FILE):
         try:
-            expected_columns = [
-                "التاريخ", "وقت_التسجيل", "المسؤول", "نوع_العملية", 
-                "الصنف", "الكمية", "الوحدة", "المورد", "ملاحظات"
-            ]
             df = pd.read_csv(WAREHOUSE_DATA_FILE)
+            # التأكد من وجود جميع الأعمدة، وإضافة الناقصة بقيم فارغة
             for col in expected_columns:
                 if col not in df.columns:
                     df[col] = "" 
-            return df[expected_columns]
+            return df[expected_columns] # إعادة ترتيب الأعمدة حسب الترتيب المتوقع
         except pd.errors.EmptyDataError:
             return pd.DataFrame(columns=expected_columns)
     return pd.DataFrame(columns=expected_columns)
@@ -125,3 +127,6 @@ def run():
 
 # استدعاء الدالة لتشغيل الصفحة
 run()
+   
+                 
+       
