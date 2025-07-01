@@ -42,7 +42,8 @@ def run():
     with st.expander("إضافة مهمة جديدة"):
         with st.form("new_task_form", clear_on_submit=True):
             # استخدام تاريخ اليوم الحالي في جدة
-            current_date_jeddah = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date() # توقيت السعودية هو UTC+3
+            # توقيت السعودية هو UTC+3
+            current_date_jeddah = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).date() 
             task_date = st.date_input("تاريخ المهمة:", current_date_jeddah)
             
             supervisor = st.selectbox(
@@ -75,7 +76,7 @@ def run():
                     
                     save_tasks(updated_tasks)
                     st.success("✅ تم إضافة المهمة بنجاح!")
-                    st.rerun() # <--- تم التغيير هنا (استخدام st.rerun())
+                    st.rerun()
 
     with st.expander("تحديث الجدول الأسبوعي"):
         current_schedule = load_weekly_schedule()
@@ -83,7 +84,7 @@ def run():
         if st.button("حفظ الجدول الأسبوعي"):
             save_weekly_schedule(new_schedule_text)
             st.success("✅ تم حفظ الجدول الأسبوعي بنجاح!")
-            st.rerun() # <--- تم التغيير هنا (استخدام st.rerun())
+            st.rerun()
 
     # قسم عرض المهام (للمشرفين)
     st.header("عرض المهام اليومية والجدول الأسبوعي")
@@ -98,8 +99,8 @@ def run():
     daily_tasks = all_tasks[all_tasks["التاريخ"] == today_date_str]
 
     if not daily_tasks.empty:
-        # عرض المهام في جدول جميل
-        st.dataframe(daily_tasks[['المشرف', 'المهمة', 'ملاحظات']].style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
+        # عرض المهام في جدول جميل مع التاريخ والمشرف
+        st.dataframe(daily_tasks[['التاريخ', 'المشرف', 'المهمة', 'ملاحظات']].style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
         
         st.markdown("---") # فاصل مرئي
         st.subheader("🔍 تصفية المهام حسب المشرف:")
@@ -107,10 +108,12 @@ def run():
         selected_supervisor_filter = st.selectbox("اختر المشرف:", unique_supervisors)
 
         if selected_supervisor_filter == "الكل":
-            st.dataframe(daily_tasks[['المشرف', 'المهمة', 'ملاحظات']].style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
+            # عرض كل الأعمدة بما فيها التاريخ والمشرف عند اختيار "الكل"
+            st.dataframe(daily_tasks[['التاريخ', 'المشرف', 'المهمة', 'ملاحظات']].style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
         else:
             filtered_tasks = daily_tasks[daily_tasks["المشرف"] == selected_supervisor_filter]
-            st.dataframe(filtered_tasks[['المهمة', 'ملاحظات']].style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
+            # عند التصفية بمشرف معين، لا يزال التاريخ والمشرف ظاهرين
+            st.dataframe(filtered_tasks[['التاريخ', 'المشرف', 'المهمة', 'ملاحظات']].style.set_properties(**{'text-align': 'right', 'font-size': '16px'}), hide_index=True)
 
     else:
         st.info("لا توجد مهام محددة لهذا اليوم حتى الآن. يرجى من المديرة إضافتها.")
@@ -121,3 +124,4 @@ def run():
 
 # استدعاء الدالة لتشغيل الصفحة
 run()
+  
