@@ -52,7 +52,49 @@ This system is currently used in a Saudi Arabian waterfront operations facility 
 - 🌴 3 beaches and 3 toilet blocks (each with male/female sections)
 
 ---
-
 ## 📦 Project Structure
+
+creekobhur-dashboard/
+│
+├── app.py # Main Streamlit app
+├── pages/ # Sub-pages (Toilets, Beach, Staff, etc.)
+│ ├── Toilets.py
+│ ├── Beaches.py
+│ ├── Staff.py
+│ └── Admin.py
+├── tasks.csv # Task log file (or future database)
+├── assets/ # Images and icons
+└── README.md
+
+yaml
+Copy
+Edit
+
+---
+
+## 🚀 How to Run
+
+```bash
+git clone https://github.com/fahadbakhshwain/creekobhur-dashboard.git
+cd creekobhur-dashboard
+pip install -r requirements.txt
+streamlit run app.py
+
+
+👤 Author
+Fahad A. Bakhshwain
+Data Analyst & BI Developer
+📧 Email: fahad@fontbold.top
+🔗 LinkedIn
+
+🖼️ Preview
+Dashboard screenshot (Arabic interface):
+
+
+
+
+
+
+
 
 
